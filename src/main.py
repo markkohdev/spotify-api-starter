@@ -15,6 +15,11 @@ def print_header(message, length=50):
     print('*' * length)
 
 
+def translate_key_to_pitch(key):
+    pitches = ['C', 'C♯/D♭', 'D', 'D♯/E♭', 'E', 'F', 'F♯/G♭', 'G', 'G♯/A♭', 'A', 'A♯/B♭', 'B']
+    return pitches[key]
+
+
 def main():
     """
     Our main function that will get run when the program executes
@@ -34,8 +39,7 @@ def main():
 
 def demo():
     # Prompt the user for their username
-    # username = input('\nWhat is your spotify username: ')
-    username = 'markster3910'
+    username = input('\nWhat is your spotify username: ')
 
     # Initialize Spotipy
     token = get_token(username)
@@ -66,16 +70,60 @@ def demo():
     # Get the playlist tracks
     tracks = []
     total = 1
-    # The API paginates the results, so we need to iterate
+    # The API paginates the results, so we need to keep fetching until we have all of the items
     while len(tracks) < total:
         tracks_response = sp.user_playlist_tracks(playlist_owner, playlist.get('id'), offset=len(tracks))
         tracks.extend(tracks_response.get('items', []))
         total = tracks_response.get('total')
 
+    # Print out our tracks along with the list of artists for each
     for i, track in enumerate(tracks):
         track_info = track.get('track')
         artist_names = ', '.join([artist.get('name') for artist in track_info.get('artists', [])])
-        print('  {}) {} - {}'.format(i, track_info.get('name'), artist_names))
+        print('  {}) {} - {}'.format(i + 1, track_info.get('name'), artist_names))
+
+    # Choose some tracks
+    track_choices = input('\nChoose some tracks (e.g 1,4,5,6,10): ')
+
+    # Turn the input into a list of integers
+    track_choice_indexes = [int(choice.strip()) for choice in track_choices.split(',')]
+
+    # Grab the tracks from our track list and build a map of id->track
+    selected_tracks = [tracks[index - 1].get('track') for index in track_choice_indexes]
+    track_map = {track.get('id'): track for track in selected_tracks}
+
+    # Request the audio features for the chosen tracks (limited to 50)
+    tracks_features = sp.audio_features(tracks=track_map.keys())
+
+    desired_features = [
+        'tempo',
+        'time_signature',
+        'key',
+        'loudness',
+        'energy',
+        'dancibility',
+        'acousticness',
+        'instrumentalness',
+        'liveness',
+        'speechiness',
+    ]
+
+    # Iterate through the features and print the track and info
+    for track_features in tracks_features:
+        track_id = track_features.get('id')
+        track = track_map.get(track_id)
+        artist_names = ', '.join([artist.get('name') for artist in track.get('artists', [])])
+        print('\n  {} - {}'.format(track.get('name'), artist_names))
+        for feature in desired_features:
+            # Pull out the value of the feature from the features
+            feature_value = track_features.get(feature)
+
+            # If this feature is the key, convert it to a readable pitch
+            if feature == 'key':
+                feature_value = translate_key_to_pitch(feature_value)
+
+            # Print the feature value
+            print('    {}: {}'.format(feature, feature_value))
 
 
 def get_token(username):
