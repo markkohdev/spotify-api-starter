@@ -9,13 +9,23 @@ scope = 'user-library-read playlist-read-private'
 
 
 def print_header(message, length=50):
-    # Print a little message
+    """
+    Given a message, print it with a buncha stars all header-like
+    :param message: The message you want to print
+    :param length: The number of stars you want to surround it
+    """
     print('\n' + ('*' * length))
     print(message)
     print('*' * length)
 
 
 def translate_key_to_pitch(key):
+    """
+    Given a Key value in Pitch Class Notation, map the key to its actual pitch string
+    https://en.wikipedia.org/wiki/Pitch_class
+    :param key: The integer key
+    :return: The translated Pitch Class string
+    """
     pitches = ['C', 'C♯/D♭', 'D', 'D♯/E♭', 'E', 'F', 'F♯/G♭', 'G', 'G♯/A♭', 'A', 'A♯/B♭', 'B']
     return pitches[key]
 
@@ -30,16 +40,20 @@ def main():
     retry = True
     while retry:
         # Run our demo script
-        demo()
+        audio_features_demo()
 
         # Prompt the user to run again
         retry_input = input('\nRun the program again? (Y/N): ')
         retry = retry_input.lower() == 'y'
 
 
-def demo():
+def audio_features_demo():
+    """
+    This demo function will get all of a user's playlists and allow them to choose songs that they want audio features
+    for.
+    """
     # Prompt the user for their username
-    username = input('\nWhat is your spotify username: ')
+    username = input('\nWhat is your Spotify username: ')
 
     # Initialize Spotipy
     token = get_token(username)
@@ -127,6 +141,12 @@ def demo():
 
 
 def get_token(username):
+    """
+    Given username, authenticate the client and return a token
+    (NOTE: You will have to paste the URL from your browser back into the terminal)
+    :param username:
+    :return:
+    """
     try:
         with open('credentials.json') as f:
             credentials = json.load(f)
