@@ -1,16 +1,20 @@
+PYTHON=python3
+PIP=pip3
+MAINFILE=src/main.py
+
 default: run
 
 ###########################################
 # Install
 ###########################################
 install: requirements.txt
-	pip3 install -r requirements.txt
+	$(PIP) install -r requirements.txt
 
 ###########################################
 # Runners
 ###########################################
 run: install
-	python3 src/main.py
+	$(PYTHON) $(MAINFILE)
 
 
 ###########################################
