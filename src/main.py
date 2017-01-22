@@ -91,6 +91,7 @@ def audio_features_demo():
         total = tracks_response.get('total')
 
     # Print out our tracks along with the list of artists for each
+    print_header('Tracks in "{}"'.format(playlist.get('name'), 30))
     for i, track in enumerate(tracks):
         track_info = track.get('track')
         artist_names = ', '.join([artist.get('name') for artist in track_info.get('artists', [])])
@@ -123,6 +124,7 @@ def audio_features_demo():
     ]
 
     # Iterate through the features and print the track and info
+    print_header('Audio Features', 30)
     for track_features in tracks_features:
         track_id = track_features.get('id')
         track = track_map.get(track_id)
