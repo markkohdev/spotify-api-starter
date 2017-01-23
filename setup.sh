@@ -19,9 +19,14 @@ echo "Installing virtualenv and autoenv...";
 pip3 install virtualenv autoenv
 
 if ! grep -q "activate.sh" ~/.bashrc ; then
-    echo "Adding autoenv to ~/.bashrc...";
-    echo "source `which activate.sh`" >> ~/.bashrc
-    echo "cd ." >> ~/.bashrc
+    read -r -p "Do you want to add autoenv to your ~/.bashrc (recommended)? [y/N] " response
+    if [[ "$response" =~ ^([yY][eE][sS]|[yY])+$ ]]
+    then
+        echo "Adding autoenv to ~/.bashrc...";
+        echo "# Activate autoenv" >> ~/.bashrc
+        echo "source `which activate.sh`" >> ~/.bashrc
+        echo "cd ." >> ~/.bashrc
+    fi    
 fi
 
 if [ ! -d "env" ]; then

@@ -7,11 +7,21 @@ It also allows you to search a track and list out the audio features specificall
 
 Feel free to fork this jawn and use it for your own hacks and stuff!
 
-**Some handy documentation:**
- - Web API Documentation - https://developer.spotify.com/web-api/
- - Spotipy Documentation - http://spotipy.readthedocs.io/en/latest/
+#### [The Spotify Web API](https://developer.spotify.com/web-api/)
+The Spotify Web API allows applications to fetch lots of awesome data from the Spotify catalog, as well as manage
+a user's playlists and saved music.  Some examples of of info you get are:
+  - Track, artist, album, and playlist metadata and search
+  - High-level audio features for tracks
+  - In-depth audio analysis for tracks
+  - Featured playlists and new releases
+  - Music recommendations based on seed data
 
-   
+#### [Spotipy](http://spotipy.readthedocs.io/en/latest/) ([github](https://github.com/plamere/spotipy))
+Spotipy is an awesome lightweight Python wrapper library for the Spotify Web API.  Using Spotipy, you can get any information
+that you can get through the raw Web API.  The library does a bunch of the heavy lifting for things like authenticating
+against the API, serializing request data, and deserialzing response data.
+
+
 ## Setup
 First, we need to make sure python3, pip, and virtualenv are installed on your system.
 To install this stuff, run
@@ -19,9 +29,13 @@ To install this stuff, run
 ./setup.sh
 source ~/.bashrc
 ```
+_Note: If you approve, the setup script will add a line to your bashrc (your shell startup commands) which will
+automatically activate your virtual enviroment when you `cd` into this directory, setting your enviroment variables and
+using your isolated python environment._
 
-Go to https://developer.spotify.com/my-applications and create a new Application.
-For the Redirect URI, add `http://localhost/callback` (and don't forget to click "Save) 
+
+Next, go to https://developer.spotify.com/my-applications and create a new Application.
+For the Redirect URI, add `http://localhost/` (and don't forget to click "Save)
 
 From that page, copy your ClientId and your ClientSecret and put them into a file called
 `credentials.json` in the root of this repo that looks like this:
@@ -29,10 +43,10 @@ From that page, copy your ClientId and your ClientSecret and put them into a fil
 {
   "client_id": "your-spotify-client-id",
   "client_secret": "your-spotify-client-secret",
-  "redirect_uri": "http://localhost/callback"
+  "redirect_uri": "http://localhost/"
 }
 ```
-For details about how the API authenticates your account with this, see 
+For details about how the API authenticates your account with this, see
 https://developer.spotify.com/web-api/authorization-guide/#authorization_code_flow
 
 
@@ -66,7 +80,7 @@ What is your Spotify username: markster3910
             a url.  Paste that url you were directed to to
             complete the authorization.
 
-        
+
 Opened https://accounts.spotify.com/authorize?client_id=...
 
 
@@ -99,7 +113,7 @@ Tracks in "An Album a Day Keeps the Doctor Away"
   10) Nosed Up - De La Soul
   11) You Go Dave (A Goldblatt Presentation) - De La Soul, David Goldblatt
 
-Choose some tracks (e.g 1,4,5,6,10): 1,7,10 
+Choose some tracks (e.g 1,4,5,6,10): 1,7,10
 
 ******************************
 Audio Features

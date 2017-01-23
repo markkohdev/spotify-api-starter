@@ -232,7 +232,7 @@ def authenticate():
                                                   client_id=credentials.get('client_id'),
                                                   client_secret=credentials.get('client_secret'),
                                                   redirect_uri=credentials.get('redirect_uri',
-                                                                               'http://localhost/callback'),
+                                                                               'http://localhost/'),
                                                   scope=scope)
 
             spotify = spotipy.Spotify(auth=token)
