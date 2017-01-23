@@ -52,6 +52,10 @@ After that, just follow the terminal :)
 **************************************************
 Spotify Web API Demo App
 **************************************************
+Would you like to:
+  1.) Search for a song
+  2.) Choose from your playlists
+Choice: 2
 
 What is your Spotify username: markster3910
 
