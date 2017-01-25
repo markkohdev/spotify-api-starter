@@ -5,5 +5,5 @@ venv/
 
 .idea
 
-credentials.json
+credentials.sh
 .cache-*
