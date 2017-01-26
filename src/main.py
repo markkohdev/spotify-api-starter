@@ -11,6 +11,42 @@ from spotipy.client import SpotifyException
 scope = 'user-library-read playlist-read-private'
 
 
+################################################################################
+# Main Demo Function
+################################################################################
+
+def main():
+    """
+    Our main function that will get run when the program executes
+    """
+    print_header('Spotify Web API Demo App', length=50)
+
+    # Run our demo function
+    retry = True
+    while retry:
+        print("""
+    Let's get some audio features!
+    Would you like to:
+      1.) Search for a song
+      2.) Choose from your playlists
+      3.) Pick from your saved songs""")
+        program_choice = input('Choice: ')
+        if program_choice == '1':
+            search_track()
+        elif program_choice == '2':
+            list_playlists()
+        elif program_choice == '3':
+            list_library()
+
+        # Prompt the user to run again
+        retry_input = input('\nRun the program again? (Y/N): ')
+        retry = retry_input.lower() == 'y'
+
+
+################################################################################
+# Convenience Functions
+################################################################################
+
 def print_header(message, length=30):
     """
     Given a message, print it with a buncha stars all header-like
@@ -67,6 +103,49 @@ def print_audio_features_for_track(track, track_features):
         print('    {}: {}'.format(feature, feature_value))
 
 
+def choose_tracks(tracks):
+    """
+    Given a list of tracks, list them on the console and let the user choose a
+    selection of them.
+    :return: A list of selected track objects
+    """
+    for i, track in enumerate(tracks):
+        print('  {}) {}'.format(i + 1, track_string(track)))
+
+    # Choose some tracks
+    track_choices = input('\nChoose some tracks (e.g 1,4,5,6,10): ')
+
+    # Turn the input into a list of integers
+    track_choice_indexes = [int(choice.strip()) for choice in track_choices.split(',')]
+
+    # Grab the tracks from our track list and return them
+    selected_tracks = [tracks[index - 1] for index in track_choice_indexes]
+    return selected_tracks
+
+
+def get_audio_features(spotify, tracks):
+    """
+    Given a list of tracks, get and print the audio features for those tracks!
+    :param spotify: An authenticated Spotipy instance
+    :param tracks: A list of track dictionaries
+    """
+    # Build a map of id->track
+    track_map = {track.get('id'): track for track in tracks}
+
+    # Request the audio features for the chosen tracks (limited to 50)
+    tracks_features = spotify.audio_features(tracks=track_map.keys())
+
+    # Iterate through the features and print the track and info
+    print_header('Audio Features')
+    for track_features in tracks_features:
+        # Get the track from the track map
+        track_id = track_features.get('id')
+        track = track_map.get(track_id)
+
+        # Print out the track info and audio features
+        print_audio_features_for_track(track, track_features)
+
+
 def translate_key_to_pitch(key):
     """
     Given a Key value in Pitch Class Notation, map the key to its actual pitch string
@@ -78,26 +157,9 @@ def translate_key_to_pitch(key):
     return pitches[key]
 
 
-def main():
-    """
-    Our main function that will get run when the program executes
-    """
-    print_header('Spotify Web API Demo App', length=50)
-
-    # Run our demo function
-    retry = True
-    while retry:
-        print('Would you like to:\n  1.) Search for a song\n  2.) Choose from your playlists')
-        program_choice = input('Choice: ')
-        if program_choice == '1':
-            search_track()
-        elif program_choice == '2':
-            audio_features_demo()
-
-        # Prompt the user to run again
-        retry_input = input('\nRun the program again? (Y/N): ')
-        retry = retry_input.lower() == 'y'
-
+################################################################################
+# Demo Functions
+################################################################################
 
 def search_track():
     """
@@ -146,16 +208,12 @@ def search_track():
         return
 
     # Request the features for this track from the spotify API
-    features = spotify.audio_features(selected_track.get('id'))[0]
-
-    # Print the features
-    print_header('Audio Features')
-    print_audio_features_for_track(selected_track, features)
+    get_audio_features(spotify, [selected_track])
 
 
-def audio_features_demo():
+def list_playlists():
     """
-    This demo function will get all of a user's playlists and allow them to choose songs that they want audio features
+    This function will get all of a user's playlists and allow them to choose songs that they want audio features
     for.
     """
     # Prompt for a username
@@ -195,34 +253,50 @@ def audio_features_demo():
         tracks.extend(tracks_response.get('items', []))
         total = tracks_response.get('total')
 
+    # Pull out the actual track objects since they're nested weird
+    tracks = [track.get('track') for track in tracks]
+
     # Print out our tracks along with the list of artists for each
     print_header('Tracks in "{}"'.format(playlist.get('name')))
-    for i, track in enumerate(tracks):
-        track_info = track.get('track')
-        print('  {}) {}'.format(i + 1, track_string(track_info)))
 
-    # Choose some tracks
-    track_choices = input('\nChoose some tracks (e.g 1,4,5,6,10): ')
+    # Let em choose the tracks
+    selected_tracks = choose_tracks(tracks)
 
-    # Turn the input into a list of integers
-    track_choice_indexes = [int(choice.strip()) for choice in track_choices.split(',')]
+    # Print the audio features :)
+    get_audio_features(spotify, selected_tracks)
 
-    # Grab the tracks from our track list and build a map of id->track
-    selected_tracks = [tracks[index - 1].get('track') for index in track_choice_indexes]
-    track_map = {track.get('id'): track for track in selected_tracks}
 
-    # Request the audio features for the chosen tracks (limited to 50)
-    tracks_features = spotify.audio_features(tracks=track_map.keys())
+def list_library():
+    """
+    This function will get all songs in a user's library and allow them to choose which tracks to get audio features for.
+    """
+    username, spotify = authenticate_user()
 
-    # Iterate through the features and print the track and info
-    print_header('Audio Features')
-    for track_features in tracks_features:
-        # Get the track from the track map
-        track_id = track_features.get('id')
-        track = track_map.get(track_id)
+    # Get all the playlists for this user
+    tracks = []
+    total = 1
+    first_fetch = True
+    # The API paginates the results, so we need to iterate
+    while len(tracks) < total:
+        tracks_response = spotify.current_user_saved_tracks(offset=len(tracks))
+        tracks.extend(tracks_response.get('items', []))
+        total = tracks_response.get('total')
 
-        # Print out the track info and audio features
-        print_audio_features_for_track(track, track_features)
+        # Some users have a LOT of tracks.  Warn them that this might take a second
+        if first_fetch and total > 150:
+            print('\nYou have a lot of tracks saved - {} to be exact!\nGive us a second while we fetch them...'.format(
+                total))
+            first_fetch = False
+
+    # Pull out the actual track objects since they're nested weird
+    tracks = [track.get('track') for track in tracks]
+
+    # Let em choose the tracks
+    selected_tracks = choose_tracks(tracks)
+
+    # Print the audio features :)
+    get_audio_features(spotify, selected_tracks)
+
 
 def authenticate_client():
     """
@@ -239,6 +313,7 @@ def authenticate_client():
     except SpotifyOauthError as e:
         print('API credentials not set.  Please see README for instructions on setting credentials.')
         sys.exit(1)
+
 
 def authenticate_user():
     """
