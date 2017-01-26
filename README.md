@@ -27,7 +27,8 @@ against the API, serializing request data, and deserialzing response data.
 In order to access certain features of the Web API, we need to tell spotify that we're a legitimate app.
 To do this, go to https://developer.spotify.com/my-applications and create a new Application.
 
-For the Redirect URI, add `http://localhost/` (and don't forget to click "Save)
+For the Redirect URI, add `http://localhost/` - It should look like this:
+![spotify application page](https://raw.githubusercontent.com/markkohdev/spotify-api-starter/master/assets/spotify_api.png)
 
 From that page, copy your ClientId and your ClientSecret and put them into a file called
 `credentials.sh` in the root of this repo that looks like this:
