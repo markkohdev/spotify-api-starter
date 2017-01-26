@@ -25,11 +25,10 @@ def main():
     retry = True
     while retry:
         print("""
-    Let's get some audio features!
-    Would you like to:
-      1.) Search for a song
-      2.) Choose from your playlists
-      3.) Pick from your saved songs""")
+Let's get some audio features!  Would you like to:
+  1.) Search for a song
+  2.) Choose from your playlists
+  3.) Pick from your saved songs""")
         program_choice = input('Choice: ')
         if program_choice == '1':
             search_track()
@@ -116,7 +115,11 @@ def choose_tracks(tracks):
     track_choices = input('\nChoose some tracks (e.g 1,4,5,6,10): ')
 
     # Turn the input into a list of integers
-    track_choice_indexes = [int(choice.strip()) for choice in track_choices.split(',')]
+    try:
+        track_choice_indexes = [int(choice.strip()) for choice in track_choices.split(',')]
+    except ValueError as e:
+        print('Invalid input.')
+        return []
 
     # Grab the tracks from our track list and return them
     selected_tracks = [tracks[index - 1] for index in track_choice_indexes]
@@ -129,6 +132,10 @@ def get_audio_features(spotify, tracks):
     :param spotify: An authenticated Spotipy instance
     :param tracks: A list of track dictionaries
     """
+    if not tracks:
+        print('No tracks provided.')
+        return
+
     # Build a map of id->track
     track_map = {track.get('id'): track for track in tracks}
 
