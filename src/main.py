@@ -1,4 +1,3 @@
-import json
 import sys
 import os
 import spotipy
@@ -24,18 +23,21 @@ def main():
     # Run our demo function
     retry = True
     while retry:
-        print("""
+        try:
+            print("""
 Let's get some audio features!  Would you like to:
   1.) Search for a song
   2.) Choose from your playlists
   3.) Pick from your saved songs""")
-        program_choice = input('Choice: ')
-        if program_choice == '1':
-            search_track()
-        elif program_choice == '2':
-            list_playlists()
-        elif program_choice == '3':
-            list_library()
+            program_choice = input('Choice: ')
+            if program_choice == '1':
+                search_track()
+            elif program_choice == '2':
+                list_playlists()
+            elif program_choice == '3':
+                list_library()
+        except ValueError as e:
+            print('Error: Invalid input.')
 
         # Prompt the user to run again
         retry_input = input('\nRun the program again? (Y/N): ')
@@ -118,7 +120,7 @@ def choose_tracks(tracks):
     try:
         track_choice_indexes = [int(choice.strip()) for choice in track_choices.split(',')]
     except ValueError as e:
-        print('Invalid input.')
+        print('Error: Invalid input.')
         return []
 
     # Grab the tracks from our track list and return them
@@ -136,7 +138,7 @@ def get_audio_features(spotify, tracks):
         print('No tracks provided.')
         return
 
-    # Build a map of id->track
+    # Build a map of id->track so we can get the full track info later
     track_map = {track.get('id'): track for track in tracks}
 
     # Request the audio features for the chosen tracks (limited to 50)
@@ -162,6 +164,61 @@ def translate_key_to_pitch(key):
     """
     pitches = ['C', 'C♯/D♭', 'D', 'D♯/E♭', 'E', 'F', 'F♯/G♭', 'G', 'G♯/A♭', 'A', 'A♯/B♭', 'B']
     return pitches[key]
+
+
+################################################################################
+# Authentication Functions
+################################################################################
+
+def authenticate_client():
+    """
+    Using credentials from the environment variables, attempt to authenticate with the spotify web API.  If successful,
+    create a spotipy instance and return it.
+    :return: An authenticated Spotipy instance
+    """
+    try:
+        # Get an auth token for this user
+        client_credentials = SpotifyClientCredentials()
+
+        spotify = spotipy.Spotify(client_credentials_manager=client_credentials)
+        return spotify
+    except SpotifyOauthError as e:
+        print('API credentials not set.  Please see README for instructions on setting credentials.')
+        sys.exit(1)
+
+
+def authenticate_user():
+    """
+    Prompt the user for their username and authenticate them against the Spotify API.
+    (NOTE: You will have to paste the URL from your browser back into the terminal)
+    :return: (username, spotify) Where username is the user's username and spotify is an authenticated spotify (spotipy) client
+    """
+    # Prompt the user for their username
+    username = input('\nWhat is your Spotify username: ')
+
+    try:
+        # Get an auth token for this user
+        token = sp_util.prompt_for_user_token(username, scope=scope)
+
+        spotify = spotipy.Spotify(auth=token)
+        return username, spotify
+    except SpotifyException as e:
+        print('API credentials not set.  Please see README for instructions on setting credentials.')
+        sys.exit(1)
+    except SpotifyOauthError as e:
+        redirect_uri = os.environ.get('SPOTIPY_REDIRECT_URI')
+        if redirect_uri is not None:
+            print("""
+    Uh oh! It doesn't look like that URI was registered as a redirect URI for your application.
+    Please check to make sure that "{}" is listed as a Redirect URI and then Try again.'
+            """.format(redirect_uri))
+        else:
+            print("""
+    Uh oh! It doesn't look like you set a redirect URI for your application.  Please add
+    export SPOTIPY_REDIRECT_URI='http://localhost/'
+    to your `credentials.sh`, and then add "http://localhost/" as a Redirect URI in your Spotify Application page.
+    Once that's done, try again.'""")
+        sys.exit(1)
 
 
 ################################################################################
@@ -207,7 +264,7 @@ def search_track():
             if track_choice != 's':
                 # Either invalid input or cancel
                 if track_choice != 'c':
-                    print('Invalid input.')
+                    print('Error: Invalid input.')
                 keep_searching = False
 
     # Quit if we don't have a selected track
@@ -275,7 +332,8 @@ def list_playlists():
 
 def list_library():
     """
-    This function will get all songs in a user's library and allow them to choose which tracks to get audio features for.
+    This function will get all songs saved in a user's library and allow them to choose which tracks to get audio
+    features for.
     """
     username, spotify = authenticate_user()
 
@@ -303,57 +361,6 @@ def list_library():
 
     # Print the audio features :)
     get_audio_features(spotify, selected_tracks)
-
-
-def authenticate_client():
-    """
-    Using credentials from the environment variables, attempt to authenticate with the spotify web API.  If successful,
-    create a spotipy instance and return it.
-    :return: An authenticated Spotipy instance
-    """
-    try:
-        # Get an auth token for this user
-        client_credentials = SpotifyClientCredentials()
-
-        spotify = spotipy.Spotify(client_credentials_manager=client_credentials)
-        return spotify
-    except SpotifyOauthError as e:
-        print('API credentials not set.  Please see README for instructions on setting credentials.')
-        sys.exit(1)
-
-
-def authenticate_user():
-    """
-    Prompt the user for their username and authenticate them against the Spotify API.
-    (NOTE: You will have to paste the URL from your browser back into the terminal)
-    :return: (username, spotify) Where username is the user's username and spotify is an authenticated spotify (spotipy) client
-    """
-    # Prompt the user for their username
-    username = input('\nWhat is your Spotify username: ')
-
-    try:
-        # Get an auth token for this user
-        token = sp_util.prompt_for_user_token(username, scope=scope)
-
-        spotify = spotipy.Spotify(auth=token)
-        return username, spotify
-    except SpotifyException as e:
-        print('API credentials not set.  Please see README for instructions on setting credentials.')
-        sys.exit(1)
-    except SpotifyOauthError as e:
-        redirect_uri = os.environ.get('SPOTIPY_REDIRECT_URI')
-        if redirect_uri is not None:
-            print("""
-    Uh oh! It doesn't look like that URI was registered as a redirect URI for your application.
-    Please check to make sure that "{}" is listed as a Redirect URI and then Try again.'
-            """.format(redirect_uri))
-        else:
-            print("""
-    Uh oh! It doesn't look like you set a redirect URI for your application.  Please add
-    export SPOTIPY_REDIRECT_URI='http://localhost/'
-    to your `credentials.sh`, and then add "http://localhost/" as a Redirect URI in your Spotify Application page.
-    Once that's done, try again.'""")
-        sys.exit(1)
 
 
 if __name__ == '__main__':
