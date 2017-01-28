@@ -84,7 +84,7 @@ def print_audio_features_for_track(track, track_features):
         'key',
         'loudness',
         'energy',
-        'dancibility',
+        'danceability',
         'acousticness',
         'instrumentalness',
         'liveness',
@@ -153,6 +153,8 @@ def get_audio_features(spotify, tracks):
 
         # Print out the track info and audio features
         print_audio_features_for_track(track, track_features)
+
+    return track_features
 
 
 def translate_key_to_pitch(key):
