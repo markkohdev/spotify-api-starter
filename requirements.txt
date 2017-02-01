@@ -1,2 +1,4 @@
 spotipy
 ipdb
+setuptools
+matplotlib
