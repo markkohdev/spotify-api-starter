@@ -1,6 +1,6 @@
 import sys
 import os
-import time
+import math
 import spotipy
 import spotipy.util as sp_util
 from spotipy.oauth2 import SpotifyClientCredentials, SpotifyOauthError
@@ -60,22 +60,28 @@ def main():
     #         track = tracks[i]
     #         print(track_string(track))
 
+
+    plt.figure(1)
     for i, key in enumerate(feature_keys):
         vector_values = [vec[i] for vec in feature_vectors]
 
-        cleaned_vector_values = reject_outliers(vector_values)
+        cleaned_vector_values = chop_extremes(vector_values)
 
         print('Outliers: {}'.format((len(vector_values) - len(cleaned_vector_values))))
 
-        plt.figure()
-        plt.hist(vector_values, bins=20)
-        plt.hist(cleaned_vector_values, bins=20)
+        plt.subplot(3, 2, i+1)
+        # plt.hist(vector_values, bins=20, color='#3191ea')
+        plt.hist(cleaned_vector_values, bins=20, color='#8cee76')
         plt.title(key.capitalize())
         plt.xlabel('Value')
         plt.ylabel('Frequency')
-        plt.draw()
 
+    plt.tight_layout()
     plt.show()
+
+def chop_extremes(data, m=0.01):
+    tail_length = math.floor(len(data) * m)
+    return data[tail_length:(-1 * tail_length)]
 
 
 def reject_outliers(data, m = 2.0):
