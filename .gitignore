@@ -1,6 +1,7 @@
 *.pyc
 
 env/
+env-api/
 venv/
 
 .idea

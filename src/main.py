@@ -7,6 +7,7 @@ from spotipy.oauth2 import SpotifyClientCredentials, SpotifyOauthError
 from spotipy.client import SpotifyException
 import json
 import matplotlib.pyplot as plt
+import numpy as np
 
 # Define the scopes that we need access to
 # https://developer.spotify.com/web-api/using-scopes/
@@ -53,11 +54,22 @@ def main():
 
     feature_vectors = features.values()
 
+    # Print tracks with low acousticness values
+    # for i, vector in enumerate(feature_vectors):
+    #     if vector[0] <= 0.05:
+    #         track = tracks[i]
+    #         print(track_string(track))
+
     for i, key in enumerate(feature_keys):
         vector_values = [vec[i] for vec in feature_vectors]
 
+        cleaned_vector_values = reject_outliers(vector_values)
+
+        print('Outliers: {}'.format((len(vector_values) - len(cleaned_vector_values))))
+
         plt.figure()
         plt.hist(vector_values, bins=20)
+        plt.hist(cleaned_vector_values, bins=20)
         plt.title(key.capitalize())
         plt.xlabel('Value')
         plt.ylabel('Frequency')
@@ -66,7 +78,11 @@ def main():
     plt.show()
 
 
-
+def reject_outliers(data, m = 2.0):
+    iqr = np.subtract(*np.percentile(data, [75, 25]))
+    med = np.median(data)
+    max_diff = m * iqr
+    return [d for d in data if abs(d-med) < max_diff]
 
 
 ################################################################################

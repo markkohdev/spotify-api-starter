@@ -31,5 +31,5 @@ fi
 
 if [ ! -d "env" ]; then
     echo "Creating virtual env..."
-    virtualenv -p python3 env
+    virtualenv -p python3 env-api
 fi
