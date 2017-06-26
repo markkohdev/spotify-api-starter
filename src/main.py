@@ -70,8 +70,8 @@ def main():
         print('Outliers: {}'.format((len(vector_values) - len(cleaned_vector_values))))
 
         plt.subplot(3, 2, i+1)
-        # plt.hist(vector_values, bins=20, color='#3191ea')
-        plt.hist(cleaned_vector_values, bins=20, color='#8cee76')
+        plt.hist(vector_values, bins=20, color='#3191ea')
+        # plt.hist(cleaned_vector_values, bins=20, color='#8cee76')
         plt.title(key.capitalize())
         plt.xlabel('Value')
         plt.ylabel('Frequency')
