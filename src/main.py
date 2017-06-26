@@ -1,14 +1,26 @@
 import sys
 import os
+import math
 import spotipy
 import spotipy.util as sp_util
 from spotipy.oauth2 import SpotifyClientCredentials, SpotifyOauthError
 from spotipy.client import SpotifyException
+import json
+import matplotlib.pyplot as plt
+import numpy as np
 
 # Define the scopes that we need access to
 # https://developer.spotify.com/web-api/using-scopes/
 scope = 'user-library-read playlist-read-private'
 
+feature_keys = [
+  'acousticness',
+  'danceability',
+  'instrumentalness',
+  'liveness',
+  'speechiness',
+  'valence'
+]
 
 ################################################################################
 # Main Demo Function
@@ -18,30 +30,65 @@ def main():
     """
     Our main function that will get run when the program executes
     """
-    print_header('Spotify Web API Demo App', length=50)
+    print_header('Vector Histogram Jawn', length=50)
 
-    # Run our demo function
-    retry = True
-    while retry:
-        try:
-            print("""
-Let's get some audio features!  Would you like to:
-  1.) Search for a song
-  2.) Choose from your playlists
-  3.) Pick from your saved songs""")
-            program_choice = input('Choice: ')
-            if program_choice == '1':
-                search_track()
-            elif program_choice == '2':
-                list_playlists()
-            elif program_choice == '3':
-                list_library()
-        except ValueError as e:
-            print('Error: Invalid input.')
 
-        # Prompt the user to run again
-        retry_input = input('\nRun the program again? (Y/N): ')
-        retry = retry_input.lower() == 'y'
+    if not os.path.isfile('tracks.json') or not os.path.isfile('features.json'):
+        username, spotipy = authenticate_user()
+
+        tracks = get_library(spotipy)
+
+        features = get_audio_features(spotipy, tracks)
+
+        with open('tracks.json', 'w') as out:
+            json.dump(tracks, out)
+
+        with open('features.json', 'w') as out:
+            json.dump(features, out)
+    else:
+        with open('tracks.json') as infile:
+            tracks = json.load(infile)
+
+        with open('features.json') as infile:
+            features = json.load(infile)
+
+    feature_vectors = features.values()
+
+    # Print tracks with low acousticness values
+    # for i, vector in enumerate(feature_vectors):
+    #     if vector[0] <= 0.05:
+    #         track = tracks[i]
+    #         print(track_string(track))
+
+
+    plt.figure(1)
+    for i, key in enumerate(feature_keys):
+        vector_values = [vec[i] for vec in feature_vectors]
+
+        cleaned_vector_values = chop_extremes(vector_values)
+
+        print('Outliers: {}'.format((len(vector_values) - len(cleaned_vector_values))))
+
+        plt.subplot(3, 2, i+1)
+        plt.hist(vector_values, bins=20, color='#3191ea')
+        # plt.hist(cleaned_vector_values, bins=20, color='#8cee76')
+        plt.title(key.capitalize())
+        plt.xlabel('Value')
+        plt.ylabel('Frequency')
+
+    plt.tight_layout()
+    plt.show()
+
+def chop_extremes(data, m=0.01):
+    tail_length = math.floor(len(data) * m)
+    return data[tail_length:(-1 * tail_length)]
+
+
+def reject_outliers(data, m = 2.0):
+    iqr = np.subtract(*np.percentile(data, [75, 25]))
+    med = np.median(data)
+    max_diff = m * iqr
+    return [d for d in data if abs(d-med) < max_diff]
 
 
 ################################################################################
@@ -130,7 +177,7 @@ def choose_tracks(tracks):
 
 def get_audio_features(spotify, tracks):
     """
-    Given a list of tracks, get and print the audio features for those tracks!
+    Given a list of tracks get the audio features for those tracks and return them in a map of trackId->Features
     :param spotify: An authenticated Spotipy instance
     :param tracks: A list of track dictionaries
     """
@@ -139,22 +186,26 @@ def get_audio_features(spotify, tracks):
         return
 
     # Build a map of id->track so we can get the full track info later
-    track_map = {track.get('id'): track for track in tracks}
+    track_ids = [track.get('id') for track in tracks]
 
-    # Request the audio features for the chosen tracks (limited to 50)
-    tracks_features = spotify.audio_features(tracks=track_map.keys())
+    features = {}
+    limit = 100
+    current = 0
+    num_tracks = len(track_ids)
 
-    # Iterate through the features and print the track and info
-    print_header('Audio Features')
-    for track_features in tracks_features:
-        # Get the track from the track map
-        track_id = track_features.get('id')
-        track = track_map.get(track_id)
+    while current < num_tracks:
+        upper = current + limit if current + limit < num_tracks else num_tracks
 
-        # Print out the track info and audio features
-        print_audio_features_for_track(track, track_features)
+        # Request the audio features for the chosen tracks (limited to 50)
+        tracks_features = spotify.audio_features(tracks=track_ids[current:upper])
+        for track_features in tracks_features:
+            track_id = track_features.get('id')
+            features_array = [track_features.get(key) for key in feature_keys]
+            features[track_id] = features_array
 
-    return track_features
+        current = upper
+
+    return features
 
 
 def translate_key_to_pitch(key):
@@ -331,6 +382,32 @@ def list_playlists():
     # Print the audio features :)
     get_audio_features(spotify, selected_tracks)
 
+
+def get_library(spotify):
+    """
+    Get all of the tracks from a user's library and return them in a list
+    :param spotify: A *user_authenticated* spotipy instance
+    """
+    # Get all the playlists for this user
+    tracks = []
+    total = 1
+    first_fetch = True
+    # The API paginates the results, so we need to iterate
+    while len(tracks) < total:
+        tracks_response = spotify.current_user_saved_tracks(offset=len(tracks))
+        tracks.extend(tracks_response.get('items', []))
+        total = tracks_response.get('total')
+
+        # Some users have a LOT of tracks.  Warn them that this might take a second
+        if first_fetch and total > 150:
+            print('\nYou have a lot of tracks saved - {} to be exact!\nGive us a second while we fetch them...'.format(
+                total))
+            first_fetch = False
+
+    # Pull out the actual track objects since they're nested weird
+    tracks = [track.get('track') for track in tracks]
+
+    return tracks
 
 def list_library():
     """

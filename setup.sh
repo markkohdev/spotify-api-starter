@@ -29,7 +29,7 @@ if ! grep -q "activate.sh" ~/.bashrc ; then
     fi    
 fi
 
-if [ ! -d "env" ]; then
+if [ ! -d "env-api" ]; then
     echo "Creating virtual env..."
-    virtualenv -p python3 env
+    virtualenv -p python3 env-api
 fi
