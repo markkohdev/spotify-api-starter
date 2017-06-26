@@ -1,6 +1,7 @@
 import sys
 import os
 import spotipy
+import dateutil.parser
 import spotipy.util as sp_util
 from spotipy.oauth2 import SpotifyClientCredentials, SpotifyOauthError
 from spotipy.client import SpotifyException
@@ -28,7 +29,8 @@ def main():
 Let's get some audio features!  Would you like to:
   1.) Search for a song
   2.) Choose from your playlists
-  3.) Pick from your saved songs""")
+  3.) Pick from your saved songs
+  4.) Print Album Gathering""")
             program_choice = input('Choice: ')
             if program_choice == '1':
                 search_track()
@@ -36,6 +38,8 @@ Let's get some audio features!  Would you like to:
                 list_playlists()
             elif program_choice == '3':
                 list_library()
+            elif program_choice == '4':
+                album_a_day()
         except ValueError as e:
             print('Error: Invalid input.')
 
@@ -363,6 +367,74 @@ def list_library():
 
     # Print the audio features :)
     get_audio_features(spotify, selected_tracks)
+
+def album_a_day():
+    """
+    This function will get all of a user's playlists and allow them to choose songs that they want audio features
+    for.
+    """
+    # Prompt for a username
+    username = input('\nWhat is your Spotify username: ')
+
+    # Initialize Spotipy
+    spotify = authenticate_client()
+
+    # Get all the playlists for this user
+    playlists = []
+    total = 1
+    # The API paginates the results, so we need to iterate
+    while len(playlists) < total:
+        playlists_response = spotify.user_playlists(username, offset=len(playlists))
+        playlists.extend(playlists_response.get('items', []))
+        total = playlists_response.get('total')
+
+    # Remove any playlists that we don't own
+    playlists = [playlist for playlist in playlists if playlist.get('owner', {}).get('id') == username]
+
+    # List out all of the playlists
+    print_header('Your Playlists')
+    for i, playlist in enumerate(playlists):
+        print('  {}) {} - {}'.format(i + 1, playlist.get('name'), playlist.get('uri')))
+
+    # Choose a playlist
+    playlist_choice = int(input('\nChoose a playlist: '))
+    playlist = playlists[playlist_choice - 1]
+    playlist_owner = playlist.get('owner', {}).get('id')
+
+    # Get the playlist tracks
+    tracks = []
+    total = 1
+    # The API paginates the results, so we need to keep fetching until we have all of the items
+    while len(tracks) < total:
+        tracks_response = spotify.user_playlist_tracks(playlist_owner, playlist.get('id'), offset=len(tracks))
+        tracks.extend(tracks_response.get('items', []))
+        total = tracks_response.get('total')
+
+    album_map = {}
+
+    for track in tracks:
+        added_at = dateutil.parser.parse(track.get('added_at'))
+        track_info = track.get('track', {})
+        album_info = track_info.get('album', {})
+        album_id = album_info.get('id')
+
+        if album_id not in album_map:
+            album_map[album_id] = {
+                'date': added_at.strftime('%m/%d/%Y'),
+                'name': album_info.get('name'),
+                'artists': ' + '.join([a.get('name') for a in album_info.get('artists', [])]),
+                'uri': album_info.get('uri')
+            }
+
+
+
+    # Print out our tracks along with the list of artists for each
+    print_header('Albums in in "{}"'.format(playlist.get('name')))
+
+    albums_list = sorted(album_map.values(), key=lambda x: x.get('date'))
+
+    for album in albums_list:
+        print('{date},,{name},{artists},{uri}'.format(**album))
 
 
 if __name__ == '__main__':
