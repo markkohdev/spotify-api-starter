@@ -57,10 +57,10 @@ Let's get some audio data!  How would you like to choose your tracks:
         if selected_tracks:
             try:
                 print("""
-Great, we have {} tracks!  What would you like to see for these
-tracks:
+Great, we have {} {}!  What would you like to see for these tracks:
     1.) Audio Features (High-Level)
-    2.) Audio Analysis (Low-Level)""")
+    2.) Audio Analysis (Low-Level)""".format(len(selected_tracks),
+        ("tracks" if len(selected_tracks) > 1 else "track")))
                 display_choice = input('Choice: ')
             except ValueError as e:
                 print('Error: Invalid input.')
