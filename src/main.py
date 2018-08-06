@@ -14,6 +14,13 @@ from display_utils import (
     choose_tracks
     )
 
+from common import (
+    authenticate_client,
+    authenticate_user,
+    fetch_artists,
+    fetch_artist_top_tracks
+    )
+
 # Define the scopes that we need access to
 # https://developer.spotify.com/web-api/using-scopes/
 scope = 'user-library-read playlist-read-private'
@@ -135,73 +142,6 @@ def get_audio_analysis(spotify, tracks, pretty_print=False):
             print_audio_analysis_for_track(track, analysis)
 
     return tracks_analysis
-
-
-################################################################################
-# Authentication Functions
-################################################################################
-
-def authenticate_client():
-    """
-    Using credentials from the environment variables, attempt to authenticate with the spotify web API.  If successful,
-    create a spotipy instance and return it.
-    :return: An authenticated Spotipy instance
-    """
-    try:
-        # Get an auth token for this user
-        client_credentials = SpotifyClientCredentials()
-
-        spotify = spotipy.Spotify(client_credentials_manager=client_credentials)
-        return spotify
-    except SpotifyOauthError as e:
-        print('API credentials not set.  Please see README for instructions on setting credentials.')
-        sys.exit(1)
-
-
-def authenticate_user():
-    """
-    Prompt the user for their username and authenticate them against the Spotify API.
-    (NOTE: You will have to paste the URL from your browser back into the terminal)
-    :return: (username, spotify) Where username is the user's username and spotify is an authenticated spotify (spotipy) client
-    """
-    # Prompt the user for their username
-    username = input('\nWhat is your Spotify username: ')
-
-    cache_path=".cache-" + username
-
-    if not os.path.isfile(cache_path):
-        print("""
-
-    You will now be directed to your browser in order to authenticate with Spotify.
-    Once you log into Spotify, you will be redirected to a "http://localhost/?code=..." URL.  Please copy that URL and
-    paste it back here in order to complete authentication.
-
-     """)
-        input("Press <Enter> to continue...")
-
-    try:
-        # Get an auth token for this user
-        token = sp_util.prompt_for_user_token(username, scope=scope)
-
-        spotify = spotipy.Spotify(auth=token)
-        return username, spotify
-    except SpotifyException as e:
-        print('API credentials not set.  Please see README for instructions on setting credentials.')
-        sys.exit(1)
-    except SpotifyOauthError as e:
-        redirect_uri = os.environ.get('SPOTIPY_REDIRECT_URI')
-        if redirect_uri is not None:
-            print("""
-    Uh oh! It doesn't look like that URI was registered as a redirect URI for your application.
-    Please check to make sure that "{}" is listed as a Redirect URI and then Try again.'
-            """.format(redirect_uri))
-        else:
-            print("""
-    Uh oh! It doesn't look like you set a redirect URI for your application.  Please add
-    export SPOTIPY_REDIRECT_URI='http://localhost/'
-    to your `credentials.sh`, and then add "http://localhost/" as a Redirect URI in your Spotify Application page.
-    Once that's done, try again.'""")
-        sys.exit(1)
 
 
 ################################################################################
