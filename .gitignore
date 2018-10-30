@@ -2,6 +2,7 @@
 
 env/
 venv/
+data/
 
 .idea
 
