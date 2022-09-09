@@ -6,4 +6,7 @@ venv/
 .idea
 
 credentials.sh
-.cache-*
+.cache*
+output/
+.DS_Store
+

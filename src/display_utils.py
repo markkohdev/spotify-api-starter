@@ -6,6 +6,7 @@
 # Written by Mark Koh
 # 2/3/2018
 import json
+import os
 
 def print_header(message, length=30):
     """
@@ -85,6 +86,20 @@ def print_audio_analysis_for_track(track, track_analysis):
     """
     print('\n  {}'.format(track_string(track)))
     print(json.dumps(track_analysis, indent=2))
+
+
+def save_audio_analysis_for_track(track, track_analysis):
+    """
+    Given a track and a analysis response, print out the analysis JSON
+    :param track:
+    :param track_analysis:
+    :return:
+    """
+    if not os.path.exists('output'):
+        os.mkdir('output')
+    with open('output/{}.json'.format(track_string(track)), 'w') as f:
+        print('\nJSON saved to \'output/{}.json\''.format(track_string(track)))
+        f.write(json.dumps(track_analysis, ensure_ascii=False, indent=2))
 
 
 def choose_tracks(tracks):
