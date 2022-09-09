@@ -10,6 +10,7 @@ from display_utils import (
     print_header,
     track_string,
     print_audio_features_for_track,
+    save_audio_analysis_for_track,
     print_audio_analysis_for_track,
     choose_tracks
     )
@@ -131,7 +132,16 @@ def get_audio_analysis(spotify, tracks, pretty_print=False):
     # can be really big
     tracks_analysis = {}
 
-    print_header('Getting Audio Audio Analysis...')
+
+    try:
+        print("""
+How would you like you output?:
+  1.) Save to a file
+  2.) Print to terminal""")
+        program_choice = input('Choice: ')
+    except ValueError as e:
+        print('Error: Invalid input.')
+
     for track_id in track_map.keys():
         analysis = spotify.audio_analysis(track_id)
         tracks_analysis[track_id] = analysis
@@ -139,7 +149,10 @@ def get_audio_analysis(spotify, tracks, pretty_print=False):
         # Print out the track info and audio features
         if pretty_print:
             track = track_map.get(track_id)
-            print_audio_analysis_for_track(track, analysis)
+            if program_choice == '1':
+                save_audio_analysis_for_track(track, analysis)
+            elif program_choice == '2':
+                print_audio_analysis_for_track(track, analysis)
 
     return tracks_analysis
 
